@@ -22,3 +22,15 @@ class Lambda(torch.nn.Module):
 
   def forward(self, x):
     return self.func(x, *self.extra_args, **self.extra_kwargs)
+
+class MetaOptimizer(object):
+  def __init__(self, optimizers):
+    self.optimizers = optimizers
+
+  def zero_grad(self):
+    for opt in self.optimizers:
+      opt.zero_grad()
+
+  def step(self):
+    for opt in self.optimizers:
+      opt.step()
