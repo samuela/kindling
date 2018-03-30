@@ -28,11 +28,11 @@ Exception                                 Traceback (most recent call last)
 ----> 1 torch.sum(x)
 
 ~/Development/kindling/kindling/nan_police.py in __call__(self, *args, **kwargs)
-    108   # Don't know what we're looking at, assume it doesn't have NaNs.
-    109   else:
---> 110     return None
-    111
-    112 def path_to_string(path):
+    147         if argnan_path == []:
+    148           raise Exception(
+--> 149             f'Found a NaN at positional argument {i + 1} (of {len(args)}) when '
+    150             f'calling `{path}`!'
+    151           )
 
 Exception: Found a NaN at positional argument 1 (of 1) when calling `torch.sum`!
 ```
