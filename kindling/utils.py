@@ -1,12 +1,15 @@
 import torch
 
 
-# See https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
 def KL_Normals(d0, d1):
+  return torch.sum(KL_Normals_independent(d0, d1))
+
+# See https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions
+def KL_Normals_independent(d0, d1):
   assert d0.mu.size() == d1.mu.size()
   sigma0_sqr = torch.pow(d0.sigma, 2)
   sigma1_sqr = torch.pow(d1.sigma, 2)
-  return torch.sum(
+  return (
     -0.5
     + (sigma0_sqr + torch.pow(d0.mu - d1.mu, 2)) / (2 * sigma1_sqr)
     + torch.log(d1.sigma)

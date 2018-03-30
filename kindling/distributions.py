@@ -40,7 +40,10 @@ class Normal(object):
     return self.mu + self.sigma * Variable(eps)
 
   def logprob(self, x):
-    return torch.sum(
+    return torch.sum(self.logprob_independent(x))
+
+  def logprob_independent(self, x):
+    return (
       -0.5 * LOG2PI
       - torch.log(self.sigma)
       -0.5 * torch.pow((x - self.mu) / self.sigma, 2)
@@ -64,6 +67,9 @@ class Bernoulli(object):
 
   def logprob(self, x):
     return -F.binary_cross_entropy(self.rate, x, size_average=False)
+
+  def logprob_independent(self, x):
+    return x * torch.log(self.rate) + (1 - x) * torch.log(1 - self.rate)
 
 class Gamma(object):
   def __init__(self, shape, rate):
