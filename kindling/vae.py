@@ -13,15 +13,13 @@ class VAE(object):
       self,
       inference_model,
       generative_model,
-      prior_z,
-      optimizer
+      prior_z
   ):
     self.inference_model = inference_model
     self.generative_model = generative_model
     self.prior_z = prior_z
-    self.optimizer = optimizer
 
-  def step(self, X, mc_samples, ):
+  def evaluate_rope(self, X, mc_samples):
     batch_size = X.size(0)
 
     # [batch_size, dim_z]
@@ -42,10 +40,6 @@ class VAE(object):
     )
 
     elbo = -z_kl + loglik_term
-
-    self.optimizer.zero_grad()
-    (-elbo).backward()
-    self.optimizer.step()
 
     return {
       'elbo': elbo,

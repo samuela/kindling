@@ -1,3 +1,5 @@
+"""An example VAE running on MNIST with tools from the kindling library."""
+
 import torch
 from torch.autograd import Variable
 from torchvision import datasets, transforms
@@ -7,8 +9,6 @@ from kindling.utils import Lambda
 from kindling.vae import VAE
 
 import matplotlib.pyplot as plt
-
-from babar.session import Session
 
 
 torch.manual_seed(0)
@@ -80,8 +80,7 @@ optimizer = torch.optim.Adam([
 vae = VAE(
   inference_model=inference_net,
   generative_model=generative_net,
-  prior_z=prior_z,
-  optimizer=optimizer
+  prior_z=prior_z
 )
 
 def train(num_epochs, show_viz=True):
@@ -89,14 +88,18 @@ def train(num_epochs, show_viz=True):
 
   for epoch in range(num_epochs):
     for batch_idx, (data, _) in enumerate(train_loader):
-      info = vae.step(X=Variable(data.view(-1, dim_x)), mc_samples=1)
+      info = vae.evaluate_rope(X=Variable(data.view(-1, dim_x)), mc_samples=1)
 
       elbo = info['elbo']
       z_kl = info['z_kl']
       loglik_term = info['reconstruction_log_likelihood']
-      reconstr = info['reconstruction']
+      reconst = info['reconstruction']
 
-      if torch.max(torch.abs(reconstr.rate.data[0] - reconstr.rate.data)) < 1e-4:
+      optimizer.zero_grad()
+      (-elbo).backward()
+      optimizer.step()
+
+      if torch.max(torch.abs(reconst.rate.data[0] - reconst.rate.data)) < 1e-4:
         print('ya done collapsed son. try reducing your learning rate.')
 
       elbo_per_iter.append(elbo.data[0])
