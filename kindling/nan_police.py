@@ -36,6 +36,12 @@ Exception                                 Traceback (most recent call last)
 
 Exception: Found a NaN at positional argument 1 (of 1) when calling `torch.sum`!
 ```
+
+Just import `from kindling.nan_police import torch` in all of your modules when
+you'd like to test for NaNs! Note that this won't inject itself into all
+references to torch, only those where you've imported this wrapped version of
+pytorch. That means that it won't affect the behavior of torch in third-party
+modules for example.
 """
 
 import math
