@@ -194,4 +194,7 @@ class Mock(object):
   def __getattr__(self, name):
     return Mock(getattr(self._obj, name), self._path + [name])
 
+  def __dir__(self):
+    return self._obj.__dir__()
+
 torch = Mock(realtorch, ['torch'])
