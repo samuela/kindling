@@ -88,7 +88,7 @@ def train(num_epochs, show_viz=True):
 
   for epoch in range(num_epochs):
     for batch_idx, (data, _) in enumerate(train_loader):
-      info = vae.evaluate_rope(X=Variable(data.view(-1, dim_x)), mc_samples=1)
+      info = vae.evaluate_elbo(X=Variable(data.view(-1, dim_x)), mc_samples=1)
 
       elbo = info['elbo']
       z_kl = info['z_kl']

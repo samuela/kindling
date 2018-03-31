@@ -19,7 +19,7 @@ class VAE(object):
     self.generative_model = generative_model
     self.prior_z = prior_z
 
-  def evaluate_rope(self, X, mc_samples):
+  def evaluate_elbo(self, X, mc_samples):
     batch_size = X.size(0)
 
     # [batch_size, dim_z]
