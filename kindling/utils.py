@@ -1,4 +1,7 @@
 import torch
+from torch.autograd import Variable
+
+from .distributions import Normal
 
 
 def KL_Normals(d0, d1):
@@ -15,6 +18,27 @@ def KL_Normals_independent(d0, d1):
     + torch.log(d1.sigma)
     - torch.log(d0.sigma)
   )
+
+class NormalPriorTheta(object):
+  """A distribution that places a zero-mean Normal distribution on all of the
+  parameters in a Module."""
+
+  def __init__(self, sigma):
+    self.sigma = sigma
+
+  def logprob(self, module):
+    return sum(
+      Normal(
+        torch.zeros_like(param),
+        self.sigma * torch.ones_like(param)
+      ).logprob(param)
+      for param in module.parameters()
+    )
+
+class NoPriorTheta(object):
+  """No prior on the weights in a Module."""
+  def logprob(self, module):
+    return Variable(torch.zeros(1))
 
 class Lambda(torch.nn.Module):
   def __init__(self, func, extra_args=(), extra_kwargs={}):
