@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import itertools
 import math
 
@@ -26,8 +27,25 @@ LOG2PI = torch.log(torch.FloatTensor([2 * math.pi]))[0]
 #       + torch.sum((x - self.mean) * torch.exp(-2 * self.log_stddev) * (x - self.mean))
 #     )
 
-class Normal(object):
+class Distribution(ABC):
+  @abstractmethod
+  def size(self, *args, **kwargs):
+    pass
+
+  @abstractmethod
+  def sample(self):
+    pass
+
+  def logprob(self, x):
+    return torch.sum(self.logprob_independent(x))
+
+  @abstractmethod
+  def logprob_independent(self, x):
+    pass
+
+class Normal(Distribution):
   def __init__(self, mu, sigma):
+    super().__init__()
     assert mu.size() == sigma.size()
     self.mu = mu
     self.sigma = sigma
@@ -38,9 +56,6 @@ class Normal(object):
   def sample(self):
     eps = torch.randn(self.mu.size()).type_as(self.mu.data)
     return self.mu + self.sigma * Variable(eps)
-
-  def logprob(self, x):
-    return torch.sum(self.logprob_independent(x))
 
   def logprob_independent(self, x):
     return (
@@ -61,9 +76,37 @@ class Normal(object):
       self.sigma.expand_as(*args, **kwargs)
     )
 
-class Bernoulli(object):
+class Normal_MeanPrecision(Distribution):
+  def __init__(self, mu, precision):
+    super().__init__()
+    assert mu.size() == precision.size()
+    self.mu = mu
+    self.precision = precision
+
+  def size(self, *args, **kwargs):
+    return self.mu.size(*args, **kwargs)
+
+  def sample(self):
+    eps = torch.randn(self.mu.size()).type_as(self.mu.data)
+    return self.mu + self.precision.pow(-0.5) * Variable(eps)
+
+  def logprob_independent(self, x):
+    return (
+      -0.5 * LOG2PI
+      +0.5 * torch.log(self.precision)
+      -0.5 * torch.pow((x - self.mu) * torch.sqrt(self.precision), 2)
+    )
+
+class Bernoulli(Distribution):
   def __init__(self, rate):
+    super().__init__()
     self.rate = rate
+
+  def size(self, *args, **kwargs):
+    return self.rate.size(*args, **kwargs)
+
+  def sample(self):
+    return Variable(torch.rand(self.rate.size())) < self.rate
 
   def logprob(self, x):
     return -F.binary_cross_entropy(self.rate, x, size_average=False)
@@ -71,14 +114,18 @@ class Bernoulli(object):
   def logprob_independent(self, x):
     return x * torch.log(self.rate) + (1 - x) * torch.log(1 - self.rate)
 
-class Gamma(object):
+class Gamma(Distribution):
   def __init__(self, shape, rate):
     assert shape.size() == rate.size()
+    super().__init__()
     self.shape = shape
     self.rate = rate
 
-  def logprob(self, x):
-    return torch.sum(
+  def size(self, *args, **kwargs):
+    return self.shape.size(*args, **kwargs)
+
+  def logprob_independent(self, x):
+    return (
       self.shape * torch.log(self.rate)
       - torch.lgamma(self.shape)
       + (self.shape - 1) * torch.log(x)
@@ -99,9 +146,23 @@ class NormalNet(object):
       self.sigma_net.parameters()
     )
 
-  def cuda(self):
-    self.mu_net.cuda()
-    self.sigma_net.cuda()
+#   def cuda(self):
+#     self.mu_net.cuda()
+#     self.sigma_net.cuda()
+
+class Normal_MeanPrecisionNet(object):
+  def __init__(self, mu_net, precision_net):
+    self.mu_net = mu_net
+    self.precision_net = precision_net
+
+  def __call__(self, x):
+    return Normal_MeanPrecision(self.mu_net(x), self.precision_net(x))
+
+  def parameters(self):
+    return itertools.chain(
+      self.mu_net.parameters(),
+      self.precision_net.parameters()
+    )
 
 class BernoulliNet(object):
   def __init__(self, rate_net):
